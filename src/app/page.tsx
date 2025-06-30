@@ -1,100 +1,100 @@
 "use client";
 
-import Image from "next/image";
-import { ConnectButton } from "thirdweb/react";
-import thirdwebIcon from "@public/thirdweb.svg";
-import { client } from "./client";
+import React from "react";
+import {
+  prepareContractCall,
+  defineChain,
+  createThirdwebClient,
+  getContract,
+} from "thirdweb";
+import { baseSepolia as baseSepoliaThirdweb } from "thirdweb/chains";
+import {
+  useActiveAccount,
+  useSendTransaction,
+  ConnectButton,
+} from "thirdweb/react";
+import ORDER_FLOW_ARTIFACT from "./abi.json";
 
-export default function Home() {
+const DIAMOND_ADDRESS = "0x0D905317687273ce6C94874165ca5A62b64Ca69d";
+const RPC_URL = NEXT_PUBLIC_TEMPLATE_RPC || "";
+const CLIENT_ID = process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID || "";
+
+const client = createThirdwebClient({
+  clientId: CLIENT_ID,
+});
+
+const chain = defineChain({
+  id: baseSepoliaThirdweb.id,
+  rpc: RPC_URL,
+  nativeCurrency: baseSepoliaThirdweb.nativeCurrency,
+  testnet: baseSepoliaThirdweb?.testnet,
+  blockExplorers: baseSepoliaThirdweb.blockExplorers,
+});
+
+const orderFlowContract = getContract({
+  client,
+  chain,
+  address: DIAMOND_ADDRESS,
+  abi: ORDER_FLOW_ARTIFACT.abi as readonly any[],
+});
+
+export const customPrepareContractCall = async ({
+  contract,
+  method,
+  params,
+  address,
+}: any) => {
+  const estimateTx = prepareContractCall({
+    contract: contract,
+    method: method,
+    params: params,
+    extraGas: 50000n,
+  });
+
+  return estimateTx;
+};
+
+export default function ThirdwebExample() {
+  const { mutate: placeOrder } = useSendTransaction();
+  const account = useActiveAccount();
+
+  const callContract = async () => {
+    const startTime = performance.now();
+    const transaction = await customPrepareContractCall({
+      contract: orderFlowContract,
+      method: "placeOrder",
+      params: [
+        "c934fc419c3dd6c251e56203e182211674bab7710a49233a338c4cfb24152126c36aaf58cfeae76a4aed5d6722d781db39acbffe2e1464be209884585dbd18a9",
+        "1000000",
+        "0x4Ca63C2eeEC388E81fEBA004a07b7Db158365EF3",
+        0,
+        "",
+        "",
+        "0x42524c0000000000000000000000000000000000000000000000000000000000",
+        0,
+      ],
+      address: account?.address,
+    });
+    placeOrder(transaction as any, {
+      onSuccess: async (result) => {
+        const endTimeSuccess = performance.now();
+        const durationSuccess = endTimeSuccess - startTime;
+        console.log(`Success took ${durationSuccess.toFixed(2)}ms`);
+      },
+      onError: () => {
+        console.log("Error");
+      },
+    });
+  };
   return (
-    <main className="p-4 pb-10 min-h-[100vh] flex items-center justify-center container max-w-screen-lg mx-auto">
-      <div className="py-20">
-        <Header />
-
-        <div className="flex justify-center mb-20">
-          <ConnectButton
-            client={client}
-            appMetadata={{
-              name: "Example App",
-              url: "https://example.com",
-            }}
-          />
-        </div>
-
-        <ThirdwebResources />
-      </div>
-    </main>
-  );
-}
-
-function Header() {
-  return (
-    <header className="flex flex-col items-center mb-20 md:mb-20">
-      <Image
-        src={thirdwebIcon}
-        alt=""
-        className="size-[150px] md:size-[150px]"
-        style={{
-          filter: "drop-shadow(0px 0px 24px #a726a9a8)",
-        }}
-      />
-
-      <h1 className="text-2xl md:text-6xl font-semibold md:font-bold tracking-tighter mb-6 text-zinc-100">
-        thirdweb SDK
-        <span className="text-zinc-300 inline-block mx-1"> + </span>
-        <span className="inline-block -skew-x-6 text-blue-500"> Next.js </span>
-      </h1>
-
-      <p className="text-zinc-300 text-base">
-        Read the{" "}
-        <code className="bg-zinc-800 text-zinc-300 px-2 rounded py-1 text-sm mx-1">
-          README.md
-        </code>{" "}
-        file to get started.
-      </p>
-    </header>
-  );
-}
-
-function ThirdwebResources() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-3 justify-center">
-      <ArticleCard
-        title="thirdweb SDK Docs"
-        href="https://portal.thirdweb.com/typescript/v5"
-        description="thirdweb TypeScript SDK documentation"
-      />
-
-      <ArticleCard
-        title="Components and Hooks"
-        href="https://portal.thirdweb.com/typescript/v5/react"
-        description="Learn about the thirdweb React components and hooks in thirdweb SDK"
-      />
-
-      <ArticleCard
-        title="thirdweb Dashboard"
-        href="https://thirdweb.com/dashboard"
-        description="Deploy, configure, and manage your smart contracts from the dashboard."
-      />
+    <div>
+      <ConnectButton client={client} chain={chain} />
+      <button
+        className="rounded-md bg-blue-500 p-2 text-white"
+        onClick={callContract}
+      >
+        Call Contract
+      </button>
     </div>
-  );
-}
-
-function ArticleCard(props: {
-  title: string;
-  href: string;
-  description: string;
-}) {
-  return (
-    <a
-      href={props.href + "?utm_source=next-template"}
-      target="_blank"
-      className="flex flex-col border border-zinc-800 p-4 rounded-lg hover:bg-zinc-900 transition-colors hover:border-zinc-700"
-    >
-      <article>
-        <h2 className="text-lg font-semibold mb-2">{props.title}</h2>
-        <p className="text-sm text-zinc-400">{props.description}</p>
-      </article>
-    </a>
   );
 }
