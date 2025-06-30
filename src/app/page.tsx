@@ -16,7 +16,7 @@ import {
 import ORDER_FLOW_ARTIFACT from "./abi.json";
 
 const DIAMOND_ADDRESS = "0x0D905317687273ce6C94874165ca5A62b64Ca69d";
-const RPC_URL = NEXT_PUBLIC_TEMPLATE_RPC || "";
+const RPC_URL = process.env.NEXT_PUBLIC_TEMPLATE_RPC || "";
 const CLIENT_ID = process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID || "";
 
 const client = createThirdwebClient({
@@ -38,23 +38,22 @@ const orderFlowContract = getContract({
   abi: ORDER_FLOW_ARTIFACT.abi as readonly any[],
 });
 
-export const customPrepareContractCall = async ({
-  contract,
-  method,
-  params,
-  address,
-}: any) => {
-  const estimateTx = prepareContractCall({
-    contract: contract,
-    method: method,
-    params: params,
-    extraGas: 50000n,
-  });
-
-  return estimateTx;
-};
-
 export default function ThirdwebExample() {
+  const customPrepareContractCall = async ({
+    contract,
+    method,
+    params,
+    address,
+  }: any) => {
+    const estimateTx = prepareContractCall({
+      contract: contract,
+      method: method,
+      params: params,
+      extraGas: 50000n,
+    });
+
+    return estimateTx;
+  };
   const { mutate: placeOrder } = useSendTransaction();
   const account = useActiveAccount();
 
