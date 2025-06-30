@@ -80,8 +80,8 @@ export default function ThirdwebExample() {
         const durationSuccess = endTimeSuccess - startTime;
         console.log(`Success took ${durationSuccess.toFixed(2)}ms`);
       },
-      onError: () => {
-        console.log("Error");
+      onError: (err) => {
+        console.log("Error", err);
       },
     });
   };
